@@ -1,0 +1,67 @@
+# Research design
+
+## Project overview
+
+This case study documents an applied quantitative survey research workflow,
+covering questionnaire development, pilot testing, data preparation, and
+initial quantitative evaluation.
+
+The purpose of the pilot was to evaluate the functioning of the questionnaire
+before its use in the main study and to identify potential issues in the
+measurement and data-collection process.
+
+## Research objectives
+
+The pilot analysis was designed to:
+
+- assess the structure and usability of the questionnaire;
+- evaluate item-level response patterns;
+- examine the internal consistency of proposed questionnaire scales;
+- compare responses between predefined participant groups;
+- identify potential issues that could inform questionnaire refinement.
+
+## Questionnaire structure
+
+The questionnaire contained 34 items organised into three conceptual areas:
+
+1. Personal Development
+2. Language
+3. Global Citizenship
+
+The public portfolio version uses synthetic data while preserving the
+analytical structure of the original pilot.
+
+## Pilot analysis workflow
+
+The quantitative analysis followed these stages:
+
+1. Data preparation
+2. Questionnaire harmonisation
+3. Response coding
+4. Descriptive analysis
+5. Item-level group comparisons
+6. Multiple-comparison adjustment
+7. Internal consistency analysis
+8. Item-level correlation analysis
+
+## Analytical considerations
+
+The pilot analysis was exploratory. Item-level group comparisons were used to
+identify patterns for further investigation rather than as confirmatory tests.
+
+Because multiple item-level comparisons were conducted, p-values were adjusted
+using the Benjamini-Hochberg procedure to control the false discovery rate.
+
+Internal consistency was evaluated using Cronbach's alpha together with
+item-level diagnostics. Reliability was not treated as a standalone criterion
+for deciding whether a scale was suitable.
+
+## Data confidentiality
+
+The original participant-level dataset and confidential research materials
+are not included in this public portfolio.
+
+The reproducible analysis uses synthetic data generated within the R Markdown
+document. The synthetic dataset is designed to reproduce the structure of the
+analysis without exposing participant information or confidential research
+materials.

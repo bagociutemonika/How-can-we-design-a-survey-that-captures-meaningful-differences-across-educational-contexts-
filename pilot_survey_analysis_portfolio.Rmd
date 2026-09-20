@@ -1,0 +1,415 @@
+---
+title: "Applied Survey Research: Questionnaire Development and Pilot Evaluation"
+author: "Monika Bagociute"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+
+## Research overview
+
+This case study documents an applied quantitative survey research workflow,
+from questionnaire development and pilot testing to quantitative evaluation.
+
+The analysis demonstrates how pilot data can be used to assess data quality,
+questionnaire functioning, item-level patterns, internal consistency, and
+differences between predefined participant groups.
+
+### Research objectives
+
+The pilot analysis focuses on:
+
+- preparing and harmonising questionnaire data;
+- evaluating item-level response patterns;
+- assessing internal consistency of questionnaire scales;
+- comparing predefined participant groups;
+- identifying issues that may inform questionnaire refinement before the main study.
+
+### Analytical workflow
+
+The analysis follows four main stages:
+
+1. Data preparation and questionnaire harmonisation
+2. Descriptive and item-level analysis
+3. Group comparisons
+4. Reliability and correlation analysis
+
+### Data note
+
+This portfolio version is a sanitised representation of an applied research
+project conducted in a professional research setting. Confidential research
+materials, identifiable participant information, and original source files are
+not included in the public portfolio repository.
+
+
+```{r setup, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(stringr)
+library(psych)
+library(ggplot2)
+library(tidyr)
+library(knitr)
+```
+
+### 1. Load data 
+
+```{r}
+
+# The original participant-level dataset is confidential and is not included
+# in the public portfolio repository.
+#
+# The following code generates a synthetic dataset with the same analytical
+# structure as the pilot data.
+
+set.seed(2026)
+
+n <- 69
+n_items <- 34
+
+data <- data.frame(
+  participant = 1:n,
+  tto = c(rep(0, 30), rep(1, 39))
+)
+
+# Generate questionnaire responses on a 1–5 scale.
+# Items are simulated with moderate correlations within conceptual scales.
+
+simulate_scale <- function(n, n_items, mean = 3.5, sd = 0.7) {
+  latent <- rnorm(n, mean = mean, sd = sd)
+  
+  responses <- sapply(
+    1:n_items,
+    function(i) {
+      round(
+        pmin(
+          5,
+          pmax(
+            1,
+            latent + rnorm(n, 0, 0.6)
+          )
+        )
+      )
+    }
+  )
+  
+  as.data.frame(responses)
+}
+
+PD <- simulate_scale(n, 11, mean = 3.5)
+Language <- simulate_scale(n, 14, mean = 3.7)
+GC <- simulate_scale(n, 9, mean = 3.6)
+
+data <- cbind(
+  data,
+  PD,
+  Language,
+  GC
+)
+
+names(data)[3:36] <- paste0("Q", 1:34)
+
+Qvars <- paste0("Q", 1:34)
+
+# Add a modest synthetic group difference to selected items.
+data[data$tto == 1, c("Q12", "Q13", "Q14", "Q15")] <-
+  pmin(5, data[data$tto == 1, c("Q12", "Q13", "Q14", "Q15")] + 0.3)
+
+
+
+
+```
+
+### 2. Data cleaning
+
+
+The original pilot dataset required several preparation steps before analysis.
+These included:
+
+- filtering responses according to the study's participation criteria;
+- harmonising questionnaire variables;
+- handling structural missingness created by questionnaire branching;
+- combining equivalent variables across questionnaire language versions;
+- standardising response coding;
+- converting questionnaire responses to numeric analysis variables.
+
+The public portfolio version uses synthetic data and therefore does not reproduce
+participant-level cleaning decisions from the original research dataset.
+
+
+#### Harmonise questionnaire language versions
+
+The pilot included questionnaire versions in different languages. Equivalent
+items were mapped to a common set of questionnaire variables so that responses
+could be analysed consistently across participants.
+
+For each questionnaire item, responses from the relevant language-specific
+variables were combined into a single analysis variable. Where one version was
+not populated because of the questionnaire routing, the corresponding response
+from the other language version was used.
+
+This harmonisation step created a common set of 34 questionnaire items for the
+subsequent analyses.
+
+
+
+#### Standardise response coding
+
+Questionnaire responses were originally collected using categorical response
+labels. Because the questionnaire included different language versions,
+equivalent response categories were mapped to a common numeric scale.
+
+The harmonised items were coded from 1 to 5, preserving the ordinal structure
+of the response options.
+
+The public portfolio version uses anonymised synthetic response categories.
+
+
+
+
+### 3. Sample description
+
+The synthetic dataset contains 69 observations and represents the structure of
+the pilot sample used in the original analysis. Participants are divided into
+two predefined groups for the purpose of demonstrating the comparative
+analysis.
+
+```{r}
+kable(data.frame(
+  Participants=nrow(data),
+  TTO=sum(data$tto==1),
+  Non_TTO=sum(data$tto==0)
+))
+```
+
+
+
+
+### 4. Descriptive statistics
+
+Descriptive statistics were used to examine the distribution and central
+tendency of responses across questionnaire items. Item-level means provide an
+initial overview of response patterns and help identify items that may warrant
+closer examination during pilot evaluation.
+
+```{r}
+describe(data[Qvars])  # Q4 and Q16 
+```
+
+#### Mean response by questionnaire item
+
+```{r}
+means <- colMeans(data[Qvars], na.rm = TRUE)
+
+plotdf <- data.frame(
+  Question = Qvars,
+  Mean = means
+)
+
+ggplot(
+  plotdf,
+  aes(reorder(Question, Mean), Mean)
+) +
+  geom_col() +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    x = NULL,
+    y = "Mean response"
+  )
+
+
+
+```
+### 5. Comparison between predefined groups
+
+The pilot analysis compared questionnaire responses between two predefined
+participant groups. Independent-samples t-tests were used to examine
+item-level differences in mean responses.
+
+These comparisons are exploratory and are intended to identify patterns that
+may warrant further investigation in the main study.
+
+```{r}
+results <- data.frame()
+
+for(i in 1:34){
+
+q <- paste0("Q",i)
+
+test <- t.test(data[[q]]~data$tto)
+
+means <- tapply(data[[q]],data$tto,mean)
+
+results <- rbind(results,
+data.frame(
+Question=q,
+Mean_nonTTO=means["0"],
+Mean_TTO=means["1"],
+t=test$statistic,
+p=test$p.value))
+}
+
+kable(results,digits=3)
+```
+
+
+
+#### Mean difference by questionnaire item
+```{r}
+plot_results <- results |>
+  mutate(
+    Difference = Mean_TTO - Mean_nonTTO
+  )
+
+ggplot(
+  plot_results,
+  aes(
+    reorder(Question, Difference),
+    Difference
+  )
+) +
+  geom_col() +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    x = NULL,
+    y = "Mean difference between groups"
+  )
+```
+
+
+
+- It is clear that the language-related questions distinguish the two groups the most.
+
+
+```{r}
+# Adjust p-values for multiple comparisons
+results$p_adjusted <- p.adjust(
+  results$p,
+  method = "BH"
+)
+
+kable(
+  results,
+  digits = 3,
+  caption = "Item-level group comparisons with Benjamini-Hochberg adjusted p-values"
+)
+
+```
+
+Because the analysis evaluates multiple questionnaire items separately,
+unadjusted p-values can increase the risk of false-positive findings. The
+Benjamini-Hochberg procedure is therefore used to control the false discovery
+rate across the item-level comparisons.
+
+The pilot comparisons are exploratory and should not be interpreted as
+confirmatory evidence of group differences.
+
+
+### 6. Internal consistency
+
+Internal consistency was evaluated separately for the three questionnaire
+scales using Cronbach's alpha and item-level diagnostics.
+
+The purpose of this analysis was to assess whether items within each proposed
+scale showed a coherent pattern of responses and to identify potential
+measurement issues for consideration before the main study.
+
+
+
+The analysis reports Cronbach's alpha together with item-level diagnostics.
+These statistics are interpreted alongside the item correlations rather than
+as a standalone measure of scale quality.
+
+#### Personal Development
+```{r}
+
+PD <- psych::alpha(data[,paste0("Q",1:11)])
+PD
+```
+
+
+#### Language
+
+```{r}
+Language <- psych::alpha(data[,paste0("Q",12:25)])
+Language
+```
+
+
+
+#### Global Citizenship
+
+```{r}
+GC <- psych::alpha(data[,paste0("Q",26:34)])
+GC
+```
+
+
+#### Reliability comparison
+
+```{r}
+alphas <- data.frame(
+Scale=c("Personal Development",
+"Language",
+"Global Citizenship"),
+Alpha=c(PD$total$raw_alpha,
+Language$total$raw_alpha,
+GC$total$raw_alpha))
+
+ggplot(
+  alphas,
+  aes(
+    x = Scale,
+    y = Alpha
+  )
+) +
+  geom_col() +
+  geom_hline(
+    yintercept = 0.70,
+    linetype = "dashed"
+  ) +
+  coord_cartesian(ylim = c(0, 1)) +
+  theme_minimal() +
+  labs(
+    x = NULL,
+    y = "Cronbach's alpha"
+  )
+```
+
+The reliability estimates provide an initial assessment of internal
+consistency across the proposed scales. In a full measurement evaluation,
+these results would be considered alongside item content, inter-item
+correlations, dimensionality, and the intended use of the scale.
+
+### 7. Item-level correlation structure
+
+Examining the correlation matrix provides an additional view of the
+relationships among questionnaire items.
+
+This analysis can help assess whether items intended to represent related
+constructs show coherent response patterns and whether some items appear
+unusually weakly or strongly related to the rest of their scale.
+
+
+```{r}
+corr <- cor(data[Qvars],use="pairwise.complete.obs")
+
+heatmap(corr,scale="none")
+```
+
+## Reproducibility
+
+The public analysis uses synthetic data generated within the R Markdown
+document. A fixed random seed is used so that the synthetic dataset and
+resulting analyses can be reproduced.
+
+The original participant-level research data are not included in this
+portfolio.
+
+
